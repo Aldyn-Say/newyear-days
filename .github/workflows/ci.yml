@@ -1,0 +1,41 @@
+name: Go CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Скачиваем код из репозитория
+      uses: actions/checkout@v4
+    
+    - name: Устанавливаем Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21' # стабильная версия
+        
+    - name: Проверка форматирования (gofmt)
+      run: |
+        if [ -n "$(gofmt -l .)" ]; then
+          echo "Ошибка: Найдены неотформатированные файлы:"
+          gofmt -l .
+          exit 1
+        fi
+        
+    - name: Статический анализ (go vet)
+      run: go vet ./...
+      
+    - name: Проверка зависимостей (go mod tidy)
+      run: |
+        go mod tidy
+        git diff --exit-code go.mod go.sum
+        
+    - name: Сборка (go build)
+      run: go build -v ./...
+      
+    - name: Тестирование (go test)
+      run: go test -v ./...
